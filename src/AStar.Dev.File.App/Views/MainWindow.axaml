@@ -3,18 +3,129 @@
         xmlns:vm="using:AStar.Dev.File.App.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="750"
         x:Class="AStar.Dev.File.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
-        Title="AStar.Dev.File.App">
+        Title="[ ASTAR FILE SCANNER ]"
+        MinWidth="1100"
+        MinHeight="700">
 
-    <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-        <vm:MainWindowViewModel/>
-    </Design.DataContext>
+    <!-- Header -->
+    <DockPanel>
 
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Border DockPanel.Dock="Top"
+                BorderThickness="0,0,0,1"
+                BorderBrush="{StaticResource HackerGreen}"
+                Height="50"
+                Padding="12,0">
+            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                <TextBlock Grid.Column="0"
+                           Text="[ ASTAR FILE SCANNER v0.1 ]"
+                           FontSize="16"
+                           FontWeight="Bold"
+                           VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            Spacing="8"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="ROOT:"
+                               VerticalAlignment="Center" />
+                    <TextBox Text="{Binding SelectedFolderPath}"
+                             IsReadOnly="True"
+                             Width="350"
+                             VerticalAlignment="Center" />
+                    <Button Content="[SELECT]"
+                            Command="{Binding SelectFolderCommand}" />
+                    <Button Content="[SCAN]"
+                            Command="{Binding StartScanCommand}"
+                            IsEnabled="{Binding CanScan}" />
+                    <Button Content="[CANCEL]"
+                            Command="{Binding CancelCommand}"
+                            IsEnabled="{Binding IsScanning}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Status bar -->
+        <Border DockPanel.Dock="Bottom"
+                BorderThickness="0,1,0,0"
+                BorderBrush="{StaticResource HackerGreen}"
+                Height="26"
+                Padding="8,0">
+            <StackPanel Orientation="Horizontal"
+                        Spacing="16"
+                        VerticalAlignment="Center">
+                <TextBlock Text="{Binding CurrentScanFolder, StringFormat='SCANNING: {0}'}" />
+                <TextBlock Text="|" Foreground="{StaticResource HackerDimGreen}" />
+                <TextBlock Text="{Binding TotalFilesProcessed, StringFormat='FILES PROCESSED: {0}'}" />
+            </StackPanel>
+        </Border>
+
+        <!-- Main content -->
+        <Grid ColumnDefinitions="*,4,260">
+
+            <!-- DataGrid -->
+            <DataGrid Grid.Column="0"
+                      ItemsSource="{Binding ScannedFiles}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserSortColumns="True">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="FILE NAME"
+                                       Binding="{Binding FileName}"
+                                       Width="200" />
+                    <DataGridTextColumn Header="FOLDER"
+                                       Binding="{Binding FolderPath}"
+                                       Width="*" />
+                    <DataGridTextColumn Header="SIZE"
+                                       Binding="{Binding FormattedSize}"
+                                       Width="90" />
+                    <DataGridTextColumn Header="TYPE"
+                                       Binding="{Binding FileType}"
+                                       Width="110" />
+                    <DataGridTextColumn Header="LAST MODIFIED"
+                                       Binding="{Binding LastModified}"
+                                       Width="160" />
+                    <DataGridTextColumn Header="LAST VIEWED"
+                                       Binding="{Binding LastViewed}"
+                                       Width="160" />
+                    <DataGridCheckBoxColumn Header="PENDING DELETE"
+                                           Binding="{Binding PendingDelete}"
+                                           Width="120" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1"
+                          Background="{StaticResource HackerDimGreen}"
+                          ResizeDirection="Columns" />
+
+            <!-- Status log -->
+            <DockPanel Grid.Column="2">
+                <Border DockPanel.Dock="Top"
+                        BorderThickness="0,0,0,1"
+                        BorderBrush="{StaticResource HackerDimGreen}"
+                        Padding="4">
+                    <TextBlock Text="[ STATUS LOG ]"
+                               FontWeight="Bold" />
+                </Border>
+                <ScrollViewer x:Name="StatusScrollViewer"
+                              VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding StatusMessages}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}"
+                                           TextWrapping="Wrap"
+                                           Padding="4,2"
+                                           FontSize="11" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+
+        </Grid>
+    </DockPanel>
 
 </Window>
+

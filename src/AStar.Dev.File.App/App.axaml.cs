@@ -1,16 +1,21 @@
-using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Data.Core;
-using Avalonia.Data.Core.Plugins;
-using System.Linq;
-using Avalonia.Markup.Xaml;
+using AStar.Dev.File.App.Data;
+using AStar.Dev.File.App.Services;
 using AStar.Dev.File.App.ViewModels;
 using AStar.Dev.File.App.Views;
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Markup.Xaml;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.IO;
 
 namespace AStar.Dev.File.App;
 
 public partial class App : Application
 {
+    private IServiceProvider? _services;
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -18,30 +23,42 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        _services = BuildServices();
+
+        // Apply EF migrations on startup
+        var factory = _services.GetRequiredService<IDbContextFactory<FileAppDbContext>>();
+        using var ctx = factory.CreateDbContext();
+        ctx.Database.Migrate();
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
-            // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
-            DisableAvaloniaDataAnnotationValidation();
             desktop.MainWindow = new MainWindow
             {
-                DataContext = new MainWindowViewModel(),
+                DataContext = _services.GetRequiredService<MainWindowViewModel>()
             };
         }
 
         base.OnFrameworkInitializationCompleted();
     }
 
-    private void DisableAvaloniaDataAnnotationValidation()
+    private static IServiceProvider BuildServices()
     {
-        // Get an array of plugins to remove
-        var dataValidationPluginsToRemove =
-            BindingPlugins.DataValidators.OfType<DataAnnotationsValidationPlugin>().ToArray();
+        var dbPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "AStar.Dev.File.App",
+            "files.db");
+        Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
 
-        // remove each entry found
-        foreach (var plugin in dataValidationPluginsToRemove)
-        {
-            BindingPlugins.DataValidators.Remove(plugin);
-        }
+        var services = new ServiceCollection();
+
+        services.AddDbContextFactory<FileAppDbContext>(options =>
+            options.UseSqlite($"Data Source={dbPath}"));
+
+        services.AddSingleton<IFileTypeClassifier, FileTypeClassifier>();
+        services.AddSingleton<IFolderPickerService, FolderPickerService>();
+        services.AddTransient<IFileScannerService, FileScannerService>();
+        services.AddTransient<MainWindowViewModel>();
+
+        return services.BuildServiceProvider();
     }
 }
