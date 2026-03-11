@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AStar.Dev.File.App/AStar.Dev.File.App.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AStar.Dev.File.App.Tests.Unit/AStar.Dev.File.App.Tests.Unit.csproj" />
+  </Folder>
+</Solution>
