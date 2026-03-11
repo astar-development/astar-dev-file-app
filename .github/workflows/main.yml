@@ -14,6 +14,7 @@ concurrency:
 
 env:
   SONAR_PROJECT: ${{ github.event.repository.name }}
+  PASCAL_REPO_NAME: Will.Be.Set.By.Step
   SOLUTION_FILE: Will.Be.Set.slnx
   CONFIGURATION: Release
   DOTNET_CORE_VERSION: 10.0.100
@@ -57,10 +58,13 @@ jobs:
             OFS="."
             print
           }')
+          echo "PASCAL_REPO_NAME=$pascal" >> $GITHUB_ENV
           echo "SOLUTION_FILE=$pascal" >> $GITHUB_ENV
-          echo "SOLUTION_FILE=$GITHUB_ENV" >> $GITHUB_ENV
+        
+      - run: echo ${{ env.SOLUTION_FILE }}.slnx
+      - run: echo ${{ env.PASCAL_REPO_NAME }}.slnx
 
-      - name: Restore ${{ env.SOLUTION_FILE }}.slnx
+      - name: Restore ${{ env.PASCAL_REPO_NAME }}.slnx
         run: dotnet restore ${{ env.SOLUTION_FILE }}.slnx
 
       - name: Build solution
