@@ -70,7 +70,7 @@
                 <Border DockPanel.Dock="Bottom"
                         BorderThickness="0,1,0,0"
                         BorderBrush="{StaticResource HackerDimGreen}"
-                        Height="30"
+                        Height="34"
                         Padding="6,0">
                     <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
 
