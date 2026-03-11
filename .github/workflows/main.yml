@@ -52,35 +52,36 @@ jobs:
         run: |
           raw="${{ github.event.repository.name }}"
 
-          # Split on '-' and PascalCase each segment
+          # Split on '-' and PascalCase each segment, rejoin with '.'
           pascal=$(echo "$raw" | awk -F'-' '{
+            OFS="."
             for (i=1; i<=NF; i++) {
               $i = toupper(substr($i,1,1)) substr($i,2)
             }
-            OFS="."
             print
           }')
 
-          # Fix leading Astar → AStar
+          # Adjust leading Astar → AStar
           pascal=$(echo "$pascal" | sed 's/^Astar/AStar/')
 
           # Add suffix
           pascal="${pascal}.slnx"
 
           echo "PASCAL_REPO_NAME=$pascal" >> $GITHUB_ENV
+
           echo "SOLUTION_FILE=$pascal" >> $GITHUB_ENV
 
       - name: PASCAL_REPO_NAME
-        run: echo ${{ env.PASCAL_REPO_NAME }}.slnx
+        run: echo ${{ env.PASCAL_REPO_NAME }}
 
       - name: SOLUTION_FILE
-        run: echo ${{ env.SOLUTION_FILE }}.slnx
+        run: echo ${{ env.SOLUTION_FILE }}
 
-      - name: Restore ${{ env.PASCAL_REPO_NAME }}.slnx
-        run: dotnet restore ${{ env.PASCAL_REPO_NAME }}.slnx
+      - name: Restore ${{ env.PASCAL_REPO_NAME }}
+        run: dotnet restore ${{ env.PASCAL_REPO_NAME }}
 
       - name: Build solution
-        run: dotnet build ${{ env.SOLUTION_FILE }}.slnx --configuration Release
+        run: dotnet build ${{ env.SOLUTION_FILE }} --configuration Release
 
       - run: echo "REPO_NAME=${{ github.event.repository.name }}" >> $GITHUB_ENV
 
