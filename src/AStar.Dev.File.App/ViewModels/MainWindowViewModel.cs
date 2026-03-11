@@ -109,9 +109,15 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task LoadScannedFilesAsync()
     {
+        var root = SelectedFolderPath;
+        // Normalise so the StartsWith check works regardless of trailing separator
+        var prefix = root.TrimEnd(System.IO.Path.DirectorySeparatorChar,
+                                  System.IO.Path.AltDirectorySeparatorChar)
+                     + System.IO.Path.DirectorySeparatorChar;
+
         await using var db = await _dbContextFactory.CreateDbContextAsync();
         var files = await db.ScannedFiles
-            .Where(f => f.RootPath == SelectedFolderPath)
+            .Where(f => f.FullPath.StartsWith(prefix))
             .OrderBy(f => f.FolderPath)
             .ThenBy(f => f.FileName)
             .ToListAsync();
