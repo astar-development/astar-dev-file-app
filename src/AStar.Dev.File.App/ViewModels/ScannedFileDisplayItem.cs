@@ -1,12 +1,16 @@
 using AStar.Dev.File.App.Models;
 using System;
+using System.IO;
 
 namespace AStar.Dev.File.App.ViewModels;
 
 public class ScannedFileDisplayItem
 {
+    public string FullPath { get; }
     public string FileName { get; }
     public string FolderPath { get; }
+    public string Extension { get; }
+    public bool IsImage { get; }
     public string FormattedSize { get; }
     public string FileType { get; }
     public string LastModified { get; }
@@ -15,8 +19,11 @@ public class ScannedFileDisplayItem
 
     public ScannedFileDisplayItem(ScannedFile file)
     {
+        FullPath = file.FullPath;
         FileName = file.FileName;
         FolderPath = file.FolderPath;
+        Extension = Path.GetExtension(file.FileName).TrimStart('.').ToUpperInvariant();
+        IsImage = file.FileType == Models.FileType.Image;
         FormattedSize = FormatSize(file.SizeInBytes);
         FileType = file.FileType.ToString();
         LastModified = file.LastModified.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");

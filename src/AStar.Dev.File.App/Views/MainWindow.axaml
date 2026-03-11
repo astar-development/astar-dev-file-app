@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:AStar.Dev.File.App.ViewModels"
+        xmlns:converters="using:AStar.Dev.File.App.Converters"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="750"
@@ -9,6 +10,10 @@
         Title="[ ASTAR FILE SCANNER ]"
         MinWidth="1100"
         MinHeight="700">
+
+    <Window.Resources>
+        <converters:FilePathToBitmapConverter x:Key="FilePathToBitmapConverter" />
+    </Window.Resources>
 
     <!-- Header -->
     <DockPanel>
@@ -108,6 +113,30 @@
                           IsReadOnly="True"
                           CanUserSortColumns="True">
                     <DataGrid.Columns>
+
+                        <!-- Thumbnail -->
+                        <DataGridTemplateColumn Header="PREVIEW" Width="80" IsReadOnly="True">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="vm:ScannedFileDisplayItem">
+                                    <Panel Width="64" Height="64" Margin="4">
+                                        <Border Background="{StaticResource HackerSurface}"
+                                                BorderBrush="{StaticResource HackerDimGreen}"
+                                                BorderThickness="1"
+                                                Width="64" Height="64">
+                                            <TextBlock Text="{Binding Extension}"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="10" />
+                                        </Border>
+                                        <Image Source="{Binding FullPath, Converter={StaticResource FilePathToBitmapConverter}}"
+                                               Width="64" Height="64"
+                                               Stretch="UniformToFill"
+                                               IsVisible="{Binding IsImage}" />
+                                    </Panel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
                         <DataGridTextColumn Header="FILE NAME"
                                            Binding="{Binding FileName}"
                                            Width="300" />
@@ -129,6 +158,22 @@
                         <DataGridCheckBoxColumn Header="DELETE PENDING"
                                                Binding="{Binding PendingDelete}"
                                                Width="150" />
+
+                        <!-- Actions -->
+                        <DataGridTemplateColumn Header="ACTIONS" Width="160" IsReadOnly="True">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="vm:ScannedFileDisplayItem">
+                                    <StackPanel Orientation="Horizontal"
+                                                Spacing="4"
+                                                VerticalAlignment="Center"
+                                                Margin="4,0">
+                                        <Button Content="[VIEW]" Padding="6,2" />
+                                        <Button Content="[DELETE]" Padding="6,2" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
                     </DataGrid.Columns>
                 </DataGrid>
 
