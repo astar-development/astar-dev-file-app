@@ -37,8 +37,7 @@
                     <Button Content="[SELECT]"
                             Command="{Binding SelectFolderCommand}" />
                     <Button Content="[SCAN]"
-                            Command="{Binding StartScanCommand}"
-                            IsEnabled="{Binding CanScan}" />
+                            Command="{Binding StartScanCommand}" />
                     <Button Content="[CANCEL]"
                             Command="{Binding CancelCommand}"
                             IsEnabled="{Binding IsScanning}" />

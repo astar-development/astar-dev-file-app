@@ -20,6 +20,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanScan))]
+    [NotifyCanExecuteChangedFor(nameof(StartScanCommand))]
     private string _selectedFolderPath = string.Empty;
 
     [ObservableProperty]
@@ -84,7 +85,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         try
         {
-            await _fileScannerService.ScanAsync(SelectedFolderPath, progress, _cts.Token);
+            await Task.Run(() => _fileScannerService.ScanAsync(SelectedFolderPath, progress, _cts.Token), _cts.Token);
             await LoadScannedFilesAsync();
         }
         catch (OperationCanceledException)

@@ -13,6 +13,8 @@ public class FileScannerService(
     IDbContextFactory<FileAppDbContext> dbContextFactory,
     IFileTypeClassifier classifier) : IFileScannerService
 {
+    private const int ProgressReportInterval = 500;
+
     private sealed class Counter { public int Value; }
 
     public async Task ScanAsync(string rootPath, IProgress<ScanProgressUpdate> progress, CancellationToken ct)
@@ -90,12 +92,17 @@ public class FileScannerService(
                 }
 
                 counter.Value++;
-                time = DateTime.Now.ToString("HH:mm:ss");
-                progress.Report(new ScanProgressUpdate(
-                    CurrentFolder: directory,
-                    TotalFilesProcessed: counter.Value,
-                    CurrentFileName: fi.Name,
-                    StatusMessage: $"[{time}] Processed: {fi.Name}"));
+
+                // Report every N files to avoid flooding the UI thread
+                if (counter.Value % ProgressReportInterval == 0)
+                {
+                    time = DateTime.Now.ToString("HH:mm:ss");
+                    progress.Report(new ScanProgressUpdate(
+                        CurrentFolder: directory,
+                        TotalFilesProcessed: counter.Value,
+                        CurrentFileName: fi.Name,
+                        StatusMessage: $"[{time}] {counter.Value} files processed..."));
+                }
             }
 
             await db.SaveChangesAsync(ct);
