@@ -51,7 +51,7 @@ jobs:
       - name: PascalCase repo name
         run: |
           raw="${{ github.event.repository.name }}"
-          pascal=$(echo "$raw" | awk -F'.' '{
+          pascal=$(echo "$raw" | awk -F'-' '{
             for (i=1; i<=NF; i++) {
               $i = toupper(substr($i,1,1)) substr($i,2)
             }
