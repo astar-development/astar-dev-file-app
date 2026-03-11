@@ -48,9 +48,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
               
-      - name: PascalCase repo name
+      - name: PascalCase repo name with rules
         run: |
           raw="${{ github.event.repository.name }}"
+
+          # Split on '-' and PascalCase each segment
           pascal=$(echo "$raw" | awk -F'-' '{
             for (i=1; i<=NF; i++) {
               $i = toupper(substr($i,1,1)) substr($i,2)
@@ -58,14 +60,24 @@ jobs:
             OFS="."
             print
           }')
+
+          # Fix leading Astar → AStar
+          pascal=$(echo "$pascal" | sed 's/^Astar/AStar/')
+
+          # Add suffix
+          pascal="${pascal}.slnx"
+
           echo "PASCAL_REPO_NAME=$pascal" >> $GITHUB_ENV
           echo "SOLUTION_FILE=$pascal" >> $GITHUB_ENV
-        
-      - run: echo ${{ env.SOLUTION_FILE }}.slnx
-      - run: echo ${{ env.PASCAL_REPO_NAME }}.slnx
+
+      - name: PASCAL_REPO_NAME
+        run: echo ${{ env.PASCAL_REPO_NAME }}.slnx
+
+      - name: SOLUTION_FILE
+        run: echo ${{ env.SOLUTION_FILE }}.slnx
 
       - name: Restore ${{ env.PASCAL_REPO_NAME }}.slnx
-        run: dotnet restore ${{ env.SOLUTION_FILE }}.slnx
+        run: dotnet restore ${{ env.PASCAL_REPO_NAME }}.slnx
 
       - name: Build solution
         run: dotnet build ${{ env.SOLUTION_FILE }}.slnx --configuration Release
