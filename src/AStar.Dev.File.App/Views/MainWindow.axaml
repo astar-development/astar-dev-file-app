@@ -63,37 +63,76 @@
         <!-- Main content -->
         <Grid ColumnDefinitions="*,4,260">
 
-            <!-- DataGrid -->
-            <DataGrid Grid.Column="0"
-                      ItemsSource="{Binding ScannedFiles}"
-                      AutoGenerateColumns="False"
-                      IsReadOnly="True"
-                      CanUserSortColumns="True">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="FILE NAME"
-                                       Binding="{Binding FileName}"
-                                       Width="300" />
-                    <DataGridTextColumn Header="FOLDER"
-                                       Binding="{Binding FolderPath}"
-                                       Width="*" />
-                    <DataGridTextColumn Header="SIZE"
-                                       Binding="{Binding FormattedSize}"
-                                       Width="90" />
-                    <DataGridTextColumn Header="TYPE"
-                                       Binding="{Binding FileType}"
-                                       Width="110" />
-                    <DataGridTextColumn Header="LAST MODIFIED"
-                                       Binding="{Binding LastModified}"
-                                       Width="180" />
-                    <DataGridTextColumn Header="LAST VIEWED"
-                                       Binding="{Binding LastViewed}"
-                                       Width="160" />
-                    <DataGridCheckBoxColumn Header="DELETE PENDING"
-                                           Binding="{Binding PendingDelete}"
-                                           Width="150" />
-                </DataGrid.Columns>
-            </DataGrid>
+            <!-- DataGrid + paging toolbar -->
+            <DockPanel Grid.Column="0">
 
+                <!-- Paging toolbar -->
+                <Border DockPanel.Dock="Bottom"
+                        BorderThickness="0,1,0,0"
+                        BorderBrush="{StaticResource HackerDimGreen}"
+                        Height="30"
+                        Padding="6,0">
+                    <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+
+                        <!-- Navigation buttons + page info -->
+                        <StackPanel Grid.Column="0"
+                                    Orientation="Horizontal"
+                                    Spacing="4"
+                                    VerticalAlignment="Center">
+                            <Button Content="[|&lt;]"  Command="{Binding FirstPageCommand}"    Padding="6,2" />
+                            <Button Content="[&lt;]"   Command="{Binding PreviousPageCommand}" Padding="6,2" />
+                            <TextBlock Text="{Binding PagingInfo}"
+                                       VerticalAlignment="Center"
+                                       Margin="10,0" />
+                            <Button Content="[&gt;]"   Command="{Binding NextPageCommand}"     Padding="6,2" />
+                            <Button Content="[&gt;|]"  Command="{Binding LastPageCommand}"     Padding="6,2" />
+                        </StackPanel>
+
+                        <!-- Page size selector -->
+                        <StackPanel Grid.Column="2"
+                                    Orientation="Horizontal"
+                                    Spacing="6"
+                                    VerticalAlignment="Center">
+                            <TextBlock Text="PAGE SIZE:"
+                                       VerticalAlignment="Center" />
+                            <ComboBox ItemsSource="{Binding PageSizes}"
+                                      SelectedItem="{Binding PageSize}"
+                                      Width="75" />
+                        </StackPanel>
+
+                    </Grid>
+                </Border>
+
+                <DataGrid ItemsSource="{Binding ScannedFiles}"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          CanUserSortColumns="True">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="FILE NAME"
+                                           Binding="{Binding FileName}"
+                                           Width="300" />
+                        <DataGridTextColumn Header="FOLDER"
+                                           Binding="{Binding FolderPath}"
+                                           Width="*" />
+                        <DataGridTextColumn Header="SIZE"
+                                           Binding="{Binding FormattedSize}"
+                                           Width="90" />
+                        <DataGridTextColumn Header="TYPE"
+                                           Binding="{Binding FileType}"
+                                           Width="110" />
+                        <DataGridTextColumn Header="LAST MODIFIED"
+                                           Binding="{Binding LastModified}"
+                                           Width="180" />
+                        <DataGridTextColumn Header="LAST VIEWED"
+                                           Binding="{Binding LastViewed}"
+                                           Width="160" />
+                        <DataGridCheckBoxColumn Header="DELETE PENDING"
+                                               Binding="{Binding PendingDelete}"
+                                               Width="150" />
+                    </DataGrid.Columns>
+                </DataGrid>
+
+            </DockPanel>
             <!-- Splitter -->
             <GridSplitter Grid.Column="1"
                           Background="{StaticResource HackerDimGreen}"

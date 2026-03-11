@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
@@ -17,6 +18,10 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IFolderPickerService _folderPickerService;
     private readonly IDbContextFactory<FileAppDbContext> _dbContextFactory;
     private CancellationTokenSource? _cts;
+    // Guards against cascading reloads when programmatically resetting CurrentPage
+    private bool _suppressPageReload;
+
+    public static IReadOnlyList<int> PageSizes { get; } = [25, 50, 75, 100, 125, 150, 175, 200];
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanScan))]
@@ -35,6 +40,32 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private int _totalFilesProcessed;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TotalPages), nameof(PagingInfo))]
+    [NotifyCanExecuteChangedFor(nameof(FirstPageCommand))]
+    [NotifyCanExecuteChangedFor(nameof(PreviousPageCommand))]
+    [NotifyCanExecuteChangedFor(nameof(NextPageCommand))]
+    [NotifyCanExecuteChangedFor(nameof(LastPageCommand))]
+    private int _pageSize = 50;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PagingInfo))]
+    [NotifyCanExecuteChangedFor(nameof(FirstPageCommand))]
+    [NotifyCanExecuteChangedFor(nameof(PreviousPageCommand))]
+    [NotifyCanExecuteChangedFor(nameof(NextPageCommand))]
+    [NotifyCanExecuteChangedFor(nameof(LastPageCommand))]
+    private int _currentPage = 1;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TotalPages), nameof(PagingInfo))]
+    [NotifyCanExecuteChangedFor(nameof(NextPageCommand))]
+    [NotifyCanExecuteChangedFor(nameof(LastPageCommand))]
+    private int _totalFileCount;
+
+    public int TotalPages => TotalFileCount == 0 ? 1 : (int)Math.Ceiling((double)TotalFileCount / PageSize);
+
+    public string PagingInfo => $"PAGE {CurrentPage} OF {TotalPages}  [{TotalFileCount} FILES]";
 
     public bool CanScan => !IsScanning && !string.IsNullOrWhiteSpace(SelectedFolderPath);
 
@@ -71,7 +102,11 @@ public partial class MainWindowViewModel : ViewModelBase
         StatusMessages.Clear();
         ScannedFiles.Clear();
         TotalFilesProcessed = 0;
+        TotalFileCount = 0;
         CurrentScanFolder = string.Empty;
+        _suppressPageReload = true;
+        CurrentPage = 1;
+        _suppressPageReload = false;
 
         _cts = new CancellationTokenSource();
 
@@ -107,19 +142,65 @@ public partial class MainWindowViewModel : ViewModelBase
         _cts?.Cancel();
     }
 
+    [RelayCommand(CanExecute = nameof(CanGoFirst))]
+    private void FirstPage() { CurrentPage = 1; }
+    private bool CanGoFirst() => CurrentPage > 1;
+
+    [RelayCommand(CanExecute = nameof(CanGoPrevious))]
+    private void PreviousPage() { CurrentPage--; }
+    private bool CanGoPrevious() => CurrentPage > 1;
+
+    [RelayCommand(CanExecute = nameof(CanGoNext))]
+    private void NextPage() { CurrentPage++; }
+    private bool CanGoNext() => CurrentPage < TotalPages;
+
+    [RelayCommand(CanExecute = nameof(CanGoLast))]
+    private void LastPage() { CurrentPage = TotalPages; }
+    private bool CanGoLast() => CurrentPage < TotalPages;
+
+    partial void OnCurrentPageChanged(int value)
+    {
+        if (!_suppressPageReload)
+            _ = LoadScannedFilesAsync();
+    }
+
+    partial void OnPageSizeChanged(int value)
+    {
+        _suppressPageReload = true;
+        CurrentPage = 1;
+        _suppressPageReload = false;
+        _ = LoadScannedFilesAsync();
+    }
+
     private async Task LoadScannedFilesAsync()
     {
-        var root = SelectedFolderPath;
-        // Normalise so the StartsWith check works regardless of trailing separator
-        var prefix = root.TrimEnd(System.IO.Path.DirectorySeparatorChar,
-                                  System.IO.Path.AltDirectorySeparatorChar)
+        if (string.IsNullOrWhiteSpace(SelectedFolderPath))
+            return;
+
+        var prefix = SelectedFolderPath.TrimEnd(System.IO.Path.DirectorySeparatorChar,
+                                                System.IO.Path.AltDirectorySeparatorChar)
                      + System.IO.Path.DirectorySeparatorChar;
 
         await using var db = await _dbContextFactory.CreateDbContextAsync();
-        var files = await db.ScannedFiles
+
+        var query = db.ScannedFiles
             .Where(f => f.FullPath.StartsWith(prefix))
             .OrderBy(f => f.FolderPath)
-            .ThenBy(f => f.FileName)
+            .ThenBy(f => f.FileName);
+
+        TotalFileCount = await query.CountAsync();
+
+        // Clamp current page if the page count shrank (e.g. after a page-size increase)
+        if (CurrentPage > TotalPages)
+        {
+            _suppressPageReload = true;
+            CurrentPage = TotalPages;
+            _suppressPageReload = false;
+        }
+
+        var files = await query
+            .Skip((CurrentPage - 1) * PageSize)
+            .Take(PageSize)
             .ToListAsync();
 
         ScannedFiles.Clear();
