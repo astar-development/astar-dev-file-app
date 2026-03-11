@@ -72,7 +72,7 @@
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="FILE NAME"
                                        Binding="{Binding FileName}"
-                                       Width="200" />
+                                       Width="300" />
                     <DataGridTextColumn Header="FOLDER"
                                        Binding="{Binding FolderPath}"
                                        Width="*" />
@@ -84,13 +84,13 @@
                                        Width="110" />
                     <DataGridTextColumn Header="LAST MODIFIED"
                                        Binding="{Binding LastModified}"
-                                       Width="160" />
+                                       Width="180" />
                     <DataGridTextColumn Header="LAST VIEWED"
                                        Binding="{Binding LastViewed}"
                                        Width="160" />
-                    <DataGridCheckBoxColumn Header="PENDING DELETE"
+                    <DataGridCheckBoxColumn Header="DELETE PENDING"
                                            Binding="{Binding PendingDelete}"
-                                           Width="120" />
+                                           Width="150" />
                 </DataGrid.Columns>
             </DataGrid>
 
