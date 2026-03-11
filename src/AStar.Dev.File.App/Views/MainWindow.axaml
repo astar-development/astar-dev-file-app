@@ -172,7 +172,10 @@
                                                 Command="{Binding DataContext.ViewFileCommand, ElementName=FileDataGrid}"
                                                 CommandParameter="{Binding}"
                                                 Padding="6,2" />
-                                        <Button Content="[DELETE]" Padding="6,2" />
+                                        <Button Content="[DELETE]"
+                                                Command="{Binding DataContext.TogglePendingDeleteCommand, ElementName=FileDataGrid}"
+                                                CommandParameter="{Binding}"
+                                                Padding="6,2" />
                                     </StackPanel>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>

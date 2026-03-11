@@ -139,6 +139,22 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task TogglePendingDelete(ScannedFileDisplayItem? item)
+    {
+        if (item is null) return;
+
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+        var file = await db.ScannedFiles.FindAsync(item.Id);
+        if (file is not null)
+        {
+            file.PendingDelete = !file.PendingDelete;
+            await db.SaveChangesAsync();
+        }
+
+        await LoadScannedFilesAsync();
+    }
+
+    [RelayCommand]
     private async Task ViewFile(ScannedFileDisplayItem? item)
     {
         if (item is null) return;

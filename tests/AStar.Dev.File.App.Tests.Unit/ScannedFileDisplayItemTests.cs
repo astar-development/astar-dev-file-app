@@ -44,11 +44,22 @@ public class ScannedFileDisplayItemTests
         sut.Id.ShouldBe(99);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void PendingDelete_IsMappedFromScannedFile(bool pendingDelete)
+    {
+        var file = MakeFile(pendingDelete: pendingDelete);
+        var sut = new ScannedFileDisplayItem(file);
+        sut.PendingDelete.ShouldBe(pendingDelete);
+    }
+
     private static ScannedFile MakeFile(
         string fullPath = "/data/docs/file.txt",
         string fileName = "file.txt",
         FileType fileType = FileType.Unknown,
-        int id = 0) => new()
+        int id = 0,
+        bool pendingDelete = false) => new()
     {
         Id = id,
         RootPath = "/data",
@@ -56,6 +67,7 @@ public class ScannedFileDisplayItemTests
         FileName = fileName,
         FullPath = fullPath,
         FileType = fileType,
+        PendingDelete = pendingDelete,
         LastModified = DateTime.UtcNow
     };
 
