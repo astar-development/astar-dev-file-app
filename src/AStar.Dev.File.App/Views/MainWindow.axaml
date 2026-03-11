@@ -108,7 +108,8 @@
                     </Grid>
                 </Border>
 
-                <DataGrid ItemsSource="{Binding ScannedFiles}"
+                <DataGrid x:Name="FileDataGrid"
+                          ItemsSource="{Binding ScannedFiles}"
                           AutoGenerateColumns="False"
                           IsReadOnly="True"
                           CanUserSortColumns="True">
@@ -162,12 +163,15 @@
                         <!-- Actions -->
                         <DataGridTemplateColumn Header="ACTIONS" Width="160" IsReadOnly="True">
                             <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate x:DataType="vm:ScannedFileDisplayItem">
+                                <DataTemplate>
                                     <StackPanel Orientation="Horizontal"
                                                 Spacing="4"
                                                 VerticalAlignment="Center"
                                                 Margin="4,0">
-                                        <Button Content="[VIEW]" Padding="6,2" />
+                                        <Button Content="[VIEW]"
+                                                Command="{Binding DataContext.ViewFileCommand, ElementName=FileDataGrid}"
+                                                CommandParameter="{Binding}"
+                                                Padding="6,2" />
                                         <Button Content="[DELETE]" Padding="6,2" />
                                     </StackPanel>
                                 </DataTemplate>

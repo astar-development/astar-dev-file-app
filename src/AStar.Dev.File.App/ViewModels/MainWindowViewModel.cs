@@ -72,6 +72,8 @@ public partial class MainWindowViewModel : ViewModelBase
     public ObservableCollection<string> StatusMessages { get; } = [];
     public ObservableCollection<ScannedFileDisplayItem> ScannedFiles { get; } = [];
 
+    public event Action<ScannedFileDisplayItem>? ViewFileRequested;
+
     public MainWindowViewModel(
         IFileScannerService fileScannerService,
         IFolderPickerService folderPickerService,
@@ -134,6 +136,22 @@ public partial class MainWindowViewModel : ViewModelBase
             _cts.Dispose();
             _cts = null;
         }
+    }
+
+    [RelayCommand]
+    private async Task ViewFile(ScannedFileDisplayItem? item)
+    {
+        if (item is null) return;
+
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+        var file = await db.ScannedFiles.FindAsync(item.Id);
+        if (file is not null)
+        {
+            file.LastViewed = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+        }
+
+        ViewFileRequested?.Invoke(item);
     }
 
     [RelayCommand(CanExecute = nameof(IsScanning))]

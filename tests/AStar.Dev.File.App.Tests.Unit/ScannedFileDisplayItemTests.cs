@@ -36,11 +36,21 @@ public class ScannedFileDisplayItemTests
         sut.IsImage.ShouldBe(expected);
     }
 
+    [Fact]
+    public void Id_IsMappedFromScannedFile()
+    {
+        var file = MakeFile(id: 99);
+        var sut = new ScannedFileDisplayItem(file);
+        sut.Id.ShouldBe(99);
+    }
+
     private static ScannedFile MakeFile(
         string fullPath = "/data/docs/file.txt",
         string fileName = "file.txt",
-        FileType fileType = FileType.Unknown) => new()
+        FileType fileType = FileType.Unknown,
+        int id = 0) => new()
     {
+        Id = id,
         RootPath = "/data",
         FolderPath = "/data/docs",
         FileName = fileName,

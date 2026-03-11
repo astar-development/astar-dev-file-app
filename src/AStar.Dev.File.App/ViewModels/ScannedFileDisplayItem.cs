@@ -6,6 +6,7 @@ namespace AStar.Dev.File.App.ViewModels;
 
 public class ScannedFileDisplayItem
 {
+    public int Id { get; }
     public string FullPath { get; }
     public string FileName { get; }
     public string FolderPath { get; }
@@ -19,6 +20,7 @@ public class ScannedFileDisplayItem
 
     public ScannedFileDisplayItem(ScannedFile file)
     {
+        Id = file.Id;
         FullPath = file.FullPath;
         FileName = file.FileName;
         FolderPath = file.FolderPath;
