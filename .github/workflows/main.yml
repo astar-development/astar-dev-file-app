@@ -58,8 +58,9 @@ jobs:
             print
           }')
           echo "SOLUTION_FILE=$pascal" >> $GITHUB_ENV
+          echo "SOLUTION_FILE=$GITHUB_ENV" >> $GITHUB_ENV
 
-      - name: Restore
+      - name: Restore ${{ env.SOLUTION_FILE }}.slnx
         run: dotnet restore ${{ env.SOLUTION_FILE }}.slnx
 
       - name: Build solution
