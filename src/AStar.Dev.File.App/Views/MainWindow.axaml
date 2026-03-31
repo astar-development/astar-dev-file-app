@@ -33,6 +33,8 @@
                             Orientation="Horizontal"
                             Spacing="8"
                             VerticalAlignment="Center">
+                    <Button Content="[LOAD FROM DB]"
+                            Command="{Binding LoadFromDatabaseCommand}" />
                     <TextBlock Text="ROOT:"
                                VerticalAlignment="Center" />
                     <TextBox Text="{Binding SelectedFolderPath}"
@@ -46,6 +48,13 @@
                     <Button Content="[CANCEL]"
                             Command="{Binding CancelCommand}"
                             IsEnabled="{Binding IsScanning}" />
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="4"
+                                VerticalAlignment="Center">
+                        <TextBlock Text="DUPLICATES ONLY:"
+                                   VerticalAlignment="Center" />
+                        <ToggleSwitch IsChecked="{Binding ShowDuplicatesOnly}" />
+                    </StackPanel>
                 </StackPanel>
             </Grid>
         </Border>
@@ -146,6 +155,7 @@
                                            Width="*" />
                         <DataGridTextColumn Header="SIZE"
                                            Binding="{Binding FormattedSize}"
+                                           SortMemberPath="SizeInBytes"
                                            Width="90" />
                         <DataGridTextColumn Header="TYPE"
                                            Binding="{Binding FileType}"

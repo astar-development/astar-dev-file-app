@@ -14,6 +14,7 @@ public class FileAppDbContext(DbContextOptions<FileAppDbContext> options) : DbCo
             entity.HasKey(e => e.Id);
 
             entity.HasIndex(e => e.FullPath).IsUnique();
+            entity.HasIndex(e => e.SizeInBytes);
 
             entity.Property(e => e.FileType)
                   .HasConversion<string>();

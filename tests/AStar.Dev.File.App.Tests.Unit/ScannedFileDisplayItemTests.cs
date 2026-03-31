@@ -37,11 +37,11 @@ public class ScannedFileDisplayItemTests
     }
 
     [Fact]
-    public void Id_IsMappedFromScannedFile()
+    public void SizeInBytes_IsMappedFromScannedFile()
     {
-        var file = MakeFile(id: 99);
+        var file = MakeFile(sizeInBytes: 12345);
         var sut = new ScannedFileDisplayItem(file);
-        sut.Id.ShouldBe(99);
+        sut.SizeInBytes.ShouldBe(12345);
     }
 
     [Theory]
@@ -59,7 +59,8 @@ public class ScannedFileDisplayItemTests
         string fileName = "file.txt",
         FileType fileType = FileType.Unknown,
         int id = 0,
-        bool pendingDelete = false) => new()
+        bool pendingDelete = false,
+        long sizeInBytes = 0) => new()
     {
         Id = id,
         RootPath = "/data",
@@ -68,6 +69,7 @@ public class ScannedFileDisplayItemTests
         FullPath = fullPath,
         FileType = fileType,
         PendingDelete = pendingDelete,
+        SizeInBytes = sizeInBytes,
         LastModified = DateTime.UtcNow
     };
 

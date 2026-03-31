@@ -3597,33 +3597,33 @@
     ]
   },
   "packageFolders": {
-    "/home/jason/.nuget/packages/": {}
+    "/home/jbarden/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/home/jason/repos/astar-dev-file-app/tests/AStar.Dev.File.App.Tests.Unit/AStar.Dev.File.App.Tests.Unit.csproj",
+      "projectUniqueName": "/home/jbarden/repos/astar-dev-file-app/tests/AStar.Dev.File.App.Tests.Unit/AStar.Dev.File.App.Tests.Unit.csproj",
       "projectName": "AStar.Dev.File.App.Tests.Unit",
-      "projectPath": "/home/jason/repos/astar-dev-file-app/tests/AStar.Dev.File.App.Tests.Unit/AStar.Dev.File.App.Tests.Unit.csproj",
-      "packagesPath": "/home/jason/.nuget/packages/",
-      "outputPath": "/home/jason/repos/astar-dev-file-app/tests/AStar.Dev.File.App.Tests.Unit/obj/",
+      "projectPath": "/home/jbarden/repos/astar-dev-file-app/tests/AStar.Dev.File.App.Tests.Unit/AStar.Dev.File.App.Tests.Unit.csproj",
+      "packagesPath": "/home/jbarden/.nuget/packages/",
+      "outputPath": "/home/jbarden/repos/astar-dev-file-app/tests/AStar.Dev.File.App.Tests.Unit/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/home/jason/.nuget/NuGet/NuGet.Config"
+        "/home/jbarden/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net10.0"
       ],
       "sources": {
-        "/usr/lib/dotnet/library-packs": {},
+        "/usr/lib64/dotnet/library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net10.0": {
           "targetAlias": "net10.0",
           "projectReferences": {
-            "/home/jason/repos/astar-dev-file-app/src/AStar.Dev.File.App/AStar.Dev.File.App.csproj": {
-              "projectPath": "/home/jason/repos/astar-dev-file-app/src/AStar.Dev.File.App/AStar.Dev.File.App.csproj"
+            "/home/jbarden/repos/astar-dev-file-app/src/AStar.Dev.File.App/AStar.Dev.File.App.csproj": {
+              "projectPath": "/home/jbarden/repos/astar-dev-file-app/src/AStar.Dev.File.App/AStar.Dev.File.App.csproj"
             }
           }
         }
@@ -3669,7 +3669,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/10.0.104/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "/usr/lib64/dotnet/sdk/10.0.104/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.CSharp": "(,4.7.32767]",
           "Microsoft.VisualBasic": "(,10.4.32767]",

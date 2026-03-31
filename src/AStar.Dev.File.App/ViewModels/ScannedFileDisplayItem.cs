@@ -12,6 +12,7 @@ public class ScannedFileDisplayItem
     public string FolderPath { get; }
     public string Extension { get; }
     public bool IsImage { get; }
+    public long SizeInBytes { get; }
     public string FormattedSize { get; }
     public string FileType { get; }
     public string LastModified { get; }
@@ -26,6 +27,7 @@ public class ScannedFileDisplayItem
         FolderPath = file.FolderPath;
         Extension = Path.GetExtension(file.FileName).TrimStart('.').ToUpperInvariant();
         IsImage = file.FileType == Models.FileType.Image;
+        SizeInBytes = file.SizeInBytes;
         FormattedSize = FormatSize(file.SizeInBytes);
         FileType = file.FileType.ToString();
         LastModified = file.LastModified.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
