@@ -1,4 +1,5 @@
 ﻿using AStar.Dev.File.App.Data;
+using AStar.Dev.File.App.Models;
 using AStar.Dev.File.App.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -26,6 +27,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanScan))]
     [NotifyCanExecuteChangedFor(nameof(StartScanCommand))]
+    [NotifyCanExecuteChangedFor(nameof(LoadFromDatabaseCommand))]
     private string _selectedFolderPath = string.Empty;
 
     [ObservableProperty]
@@ -63,6 +65,29 @@ public partial class MainWindowViewModel : ViewModelBase
     [NotifyCanExecuteChangedFor(nameof(LastPageCommand))]
     private int _totalFileCount;
 
+    private bool _showDuplicatesOnly;
+
+    public bool ShowDuplicatesOnly
+    {
+        get => _showDuplicatesOnly;
+        set
+        {
+            if (SetProperty(ref _showDuplicatesOnly, value))
+            {
+                _suppressPageReload = true;
+                CurrentPage = 1;
+                _suppressPageReload = false;
+                _ = LoadScannedFilesAsync();
+            }
+        }
+    }
+
+    [RelayCommand]
+    private void ToggleDuplicatesOnly()
+    {
+        ShowDuplicatesOnly = !ShowDuplicatesOnly;
+    }
+
     public int TotalPages => TotalFileCount == 0 ? 1 : (int)Math.Ceiling((double)TotalFileCount / PageSize);
 
     public string PagingInfo => $"PAGE {CurrentPage} OF {TotalPages}  [{TotalFileCount} FILES]";
@@ -71,6 +96,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public ObservableCollection<string> StatusMessages { get; } = [];
     public ObservableCollection<ScannedFileDisplayItem> ScannedFiles { get; } = [];
+
+    public event Action<ScannedFileDisplayItem>? ViewFileRequested;
 
     public MainWindowViewModel(
         IFileScannerService fileScannerService,
@@ -91,6 +118,17 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     private bool CanSelectFolder() => !IsScanning;
+
+    [RelayCommand(CanExecute = nameof(CanLoadFromDatabase))]
+    private async Task LoadFromDatabase()
+    {
+        _suppressPageReload = true;
+        CurrentPage = 1;
+        _suppressPageReload = false;
+        await LoadScannedFilesAsync();
+    }
+
+    private bool CanLoadFromDatabase() => !string.IsNullOrWhiteSpace(SelectedFolderPath);
 
     [RelayCommand(CanExecute = nameof(CanScan))]
     private async Task StartScan()
@@ -136,6 +174,38 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    [RelayCommand]
+    private async Task TogglePendingDelete(ScannedFileDisplayItem? item)
+    {
+        if (item is null) return;
+
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+        var file = await db.ScannedFiles.FindAsync(item.Id);
+        if (file is not null)
+        {
+            file.PendingDelete = !file.PendingDelete;
+            await db.SaveChangesAsync();
+        }
+
+        await LoadScannedFilesAsync();
+    }
+
+    [RelayCommand]
+    private async Task ViewFile(ScannedFileDisplayItem? item)
+    {
+        if (item is null) return;
+
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+        var file = await db.ScannedFiles.FindAsync(item.Id);
+        if (file is not null)
+        {
+            file.LastViewed = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+        }
+
+        ViewFileRequested?.Invoke(item);
+    }
+
     [RelayCommand(CanExecute = nameof(IsScanning))]
     private void Cancel()
     {
@@ -174,37 +244,64 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task LoadScannedFilesAsync()
     {
-        if (string.IsNullOrWhiteSpace(SelectedFolderPath))
-            return;
-
-        var prefix = SelectedFolderPath.TrimEnd(System.IO.Path.DirectorySeparatorChar,
-                                                System.IO.Path.AltDirectorySeparatorChar)
-                     + System.IO.Path.DirectorySeparatorChar;
-
-        await using var db = await _dbContextFactory.CreateDbContextAsync();
-
-        var query = db.ScannedFiles
-            .Where(f => f.FullPath.StartsWith(prefix))
-            .OrderBy(f => f.FolderPath)
-            .ThenBy(f => f.FileName);
-
-        TotalFileCount = await query.CountAsync();
-
-        // Clamp current page if the page count shrank (e.g. after a page-size increase)
-        if (CurrentPage > TotalPages)
+        try
         {
-            _suppressPageReload = true;
-            CurrentPage = TotalPages;
-            _suppressPageReload = false;
+            if (string.IsNullOrWhiteSpace(SelectedFolderPath))
+                return;
+
+            var prefix = SelectedFolderPath.TrimEnd(System.IO.Path.DirectorySeparatorChar,
+                                                    System.IO.Path.AltDirectorySeparatorChar)
+                        + System.IO.Path.DirectorySeparatorChar;
+
+            await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+            var baseQuery = db.ScannedFiles.Where(f => f.FullPath.StartsWith(prefix));
+
+            IQueryable<ScannedFile> query;
+            if (ShowDuplicatesOnly)
+            {
+                // Use subquery to find and filter for duplicate sizes in a single query
+                // This avoids materializing a potentially huge list of sizes
+                var duplicateSizeSubquery = baseQuery
+                    .GroupBy(f => f.SizeInBytes)
+                    .Where(g => g.Count() > 1)
+                    .Select(g => g.Key);
+                
+                query = baseQuery
+                    .Where(f => duplicateSizeSubquery.Contains(f.SizeInBytes))
+                    .OrderBy(f => f.SizeInBytes)
+                    .ThenBy(f => f.FolderPath)
+                    .ThenBy(f => f.FileName);
+            }
+            else
+            {
+                query = baseQuery
+                    .OrderBy(f => f.FolderPath)
+                    .ThenBy(f => f.FileName);
+            }
+
+            TotalFileCount = await query.CountAsync();
+
+            // Clamp current page if the page count shrank (e.g. after a page-size increase)
+            if (CurrentPage > TotalPages)
+            {
+                _suppressPageReload = true;
+                CurrentPage = TotalPages;
+                _suppressPageReload = false;
+            }
+
+            var files = await query
+                .Skip((CurrentPage - 1) * PageSize)
+                .Take(PageSize)
+                .ToListAsync();
+
+            ScannedFiles.Clear();
+            foreach (var file in files)
+                ScannedFiles.Add(new ScannedFileDisplayItem(file));
         }
-
-        var files = await query
-            .Skip((CurrentPage - 1) * PageSize)
-            .Take(PageSize)
-            .ToListAsync();
-
-        ScannedFiles.Clear();
-        foreach (var file in files)
-            ScannedFiles.Add(new ScannedFileDisplayItem(file));
+        catch (Exception ex)
+        {
+            StatusMessages.Add($"Error loading files: {ex.Message}");
+        }   
     }
 }
