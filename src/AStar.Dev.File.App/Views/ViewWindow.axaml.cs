@@ -1,7 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Media.Imaging;
-using AStar.Dev.File.App.ViewModels;
 
 namespace AStar.Dev.File.App.Views;
 

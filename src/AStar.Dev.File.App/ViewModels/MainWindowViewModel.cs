@@ -235,9 +235,8 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             file.PendingDelete = !file.PendingDelete;
             await db.SaveChangesAsync();
+            item.PendingDelete = file.PendingDelete;
         }
-
-        await LoadScannedFilesAsync();
     }
 
     [RelayCommand]

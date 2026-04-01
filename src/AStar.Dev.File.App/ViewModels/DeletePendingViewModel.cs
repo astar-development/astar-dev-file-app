@@ -1,11 +1,9 @@
 using AStar.Dev.File.App.Data;
-using AStar.Dev.File.App.Models;
 using AStar.Dev.File.App.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
