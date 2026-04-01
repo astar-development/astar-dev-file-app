@@ -35,6 +35,8 @@
                             VerticalAlignment="Center">
                     <Button Content="[LOAD FROM DB]"
                             Command="{Binding LoadFromDatabaseCommand}" />
+                    <Button Content="[DELETE PENDING]"
+                            Command="{Binding OpenDeleteWindowCommand}" />
                     <TextBlock Text="ROOT:"
                                VerticalAlignment="Center" />
                     <TextBox Text="{Binding SelectedFolderPath}"

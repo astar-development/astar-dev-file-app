@@ -99,6 +99,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public ObservableCollection<ScannedFileDisplayItem> ScannedFiles { get; } = [];
 
     public event Action<ScannedFileDisplayItem>? ViewFileRequested;
+    public event Action? OpenDeleteWindowRequested;
 
     public MainWindowViewModel(
         IFileScannerService fileScannerService,
@@ -172,6 +173,12 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     private bool CanLoadFromDatabase() => !string.IsNullOrWhiteSpace(SelectedFolderPath);
+
+    [RelayCommand]
+    private void OpenDeleteWindow()
+    {
+        OpenDeleteWindowRequested?.Invoke();
+    }
 
     [RelayCommand(CanExecute = nameof(CanScan))]
     private async Task StartScan()
