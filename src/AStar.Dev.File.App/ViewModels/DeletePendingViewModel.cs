@@ -14,6 +14,7 @@ public partial class DeletePendingViewModel : ViewModelBase
 {
     private readonly IDbContextFactory<FileAppDbContext> _dbContextFactory;
     private readonly IFileDeleteService _fileDeleteService;
+    private readonly IFileViewerService _fileViewerService;
 
     [ObservableProperty]
     private bool _isDeleting;
@@ -26,12 +27,18 @@ public partial class DeletePendingViewModel : ViewModelBase
 
     public ObservableCollection<ScannedFileDisplayItem> PendingDeleteFiles { get; } = [];
 
+    public event Action<ScannedFileDisplayItem>? ViewFileRequested;
+
     public DeletePendingViewModel(
         IDbContextFactory<FileAppDbContext> dbContextFactory,
-        IFileDeleteService fileDeleteService)
+        IFileDeleteService fileDeleteService,
+        IFileViewerService fileViewerService)
     {
         _dbContextFactory = dbContextFactory;
         _fileDeleteService = fileDeleteService;
+        _fileViewerService = fileViewerService;
+        _fileViewerService.FileViewRequested += item => ViewFileRequested?.Invoke(item);
+        
         _ = LoadPendingFilesAsync();
     }
 
@@ -107,6 +114,12 @@ public partial class DeletePendingViewModel : ViewModelBase
 
         StatusMessage = "All delete markings cleared.";
         await LoadPendingFilesAsync();
+    }
+
+    [RelayCommand]
+    private async Task ViewFile(ScannedFileDisplayItem? item)
+    {
+        await _fileViewerService.ViewFileAsync(item);
     }
 
     private async Task LoadPendingFilesAsync()

@@ -62,6 +62,7 @@ public partial class App : Application
         services.AddSingleton<IFolderPickerService, FolderPickerService>();
         services.AddSingleton<IFileDeleteService, FileDeleteService>();
         services.AddTransient<IFileScannerService, FileScannerService>();
+        services.AddTransient<IFileViewerService, FileViewerService>();
         services.AddTransient<MainWindowViewModel>();
         services.AddTransient<DeletePendingViewModel>();
 
