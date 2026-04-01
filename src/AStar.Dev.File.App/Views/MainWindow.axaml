@@ -125,21 +125,21 @@
                     <DataGrid.Columns>
 
                         <!-- Thumbnail -->
-                        <DataGridTemplateColumn Header="PREVIEW" Width="80" IsReadOnly="True">
+                        <DataGridTemplateColumn Header="PREVIEW" Width="140" IsReadOnly="True">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate x:DataType="vm:ScannedFileDisplayItem">
-                                    <Panel Width="64" Height="64" Margin="4">
+                                    <Panel Width="128" Height="128" Margin="4">
                                         <Border Background="{StaticResource HackerSurface}"
                                                 BorderBrush="{StaticResource HackerDimGreen}"
                                                 BorderThickness="1"
-                                                Width="64" Height="64">
+                                                Width="128" Height="128">
                                             <TextBlock Text="{Binding Extension}"
                                                        HorizontalAlignment="Center"
                                                        VerticalAlignment="Center"
                                                        FontSize="10" />
                                         </Border>
                                         <Image Source="{Binding FullPath, Converter={StaticResource FilePathToBitmapConverter}}"
-                                               Width="64" Height="64"
+                                               Width="128" Height="128"
                                                Stretch="UniformToFill"
                                                IsVisible="{Binding IsImage}" />
                                     </Panel>
