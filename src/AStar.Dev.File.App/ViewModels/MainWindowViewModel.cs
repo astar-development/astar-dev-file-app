@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -107,6 +108,28 @@ public partial class MainWindowViewModel : ViewModelBase
         _fileScannerService = fileScannerService;
         _folderPickerService = folderPickerService;
         _dbContextFactory = dbContextFactory;
+        _ = InitializeAsync();
+    }
+
+    private async Task InitializeAsync()
+    {
+        await LoadSelectedFolderPathAsync();
+    }
+
+    private async Task LoadSelectedFolderPathAsync()
+    {
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+        var setting = await db.AppSettings.FirstOrDefaultAsync(s => s.Key == "SelectedFolderPath");
+
+        if (setting is not null && !string.IsNullOrWhiteSpace(setting.Value) && Directory.Exists(setting.Value))
+        {
+            SelectedFolderPath = setting.Value;
+        }
+        else
+        {
+            var defaultPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+            SelectedFolderPath = defaultPath;
+        }
     }
 
     [RelayCommand(CanExecute = nameof(CanSelectFolder))]
@@ -114,7 +137,27 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         var path = await _folderPickerService.OpenFolderPickerAsync();
         if (!string.IsNullOrEmpty(path))
+        {
             SelectedFolderPath = path;
+            await SaveSelectedFolderPathAsync(path);
+        }
+    }
+
+    private async Task SaveSelectedFolderPathAsync(string path)
+    {
+        await using var db = await _dbContextFactory.CreateDbContextAsync();
+        var setting = await db.AppSettings.FirstOrDefaultAsync(s => s.Key == "SelectedFolderPath");
+
+        if (setting is not null)
+        {
+            setting.Value = path;
+        }
+        else
+        {
+            db.AppSettings.Add(new Models.AppSetting { Key = "SelectedFolderPath", Value = path });
+        }
+
+        await db.SaveChangesAsync();
     }
 
     private bool CanSelectFolder() => !IsScanning;
@@ -246,12 +289,9 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(SelectedFolderPath))
-                return;
+            if (string.IsNullOrWhiteSpace(SelectedFolderPath)) return;
 
-            var prefix = SelectedFolderPath.TrimEnd(System.IO.Path.DirectorySeparatorChar,
-                                                    System.IO.Path.AltDirectorySeparatorChar)
-                        + System.IO.Path.DirectorySeparatorChar;
+            var prefix = SelectedFolderPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
 
             await using var db = await _dbContextFactory.CreateDbContextAsync();
 
@@ -260,13 +300,11 @@ public partial class MainWindowViewModel : ViewModelBase
             IQueryable<ScannedFile> query;
             if (ShowDuplicatesOnly)
             {
-                // Use subquery to find and filter for duplicate sizes in a single query
-                // This avoids materializing a potentially huge list of sizes
                 var duplicateSizeSubquery = baseQuery
                     .GroupBy(f => f.SizeInBytes)
                     .Where(g => g.Count() > 1)
                     .Select(g => g.Key);
-                
+
                 query = baseQuery
                     .Where(f => duplicateSizeSubquery.Contains(f.SizeInBytes))
                     .OrderBy(f => f.SizeInBytes)
@@ -282,13 +320,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             TotalFileCount = await query.CountAsync();
 
-            // Clamp current page if the page count shrank (e.g. after a page-size increase)
-            if (CurrentPage > TotalPages)
-            {
-                _suppressPageReload = true;
-                CurrentPage = TotalPages;
-                _suppressPageReload = false;
-            }
+            ClampCurrentPage();
 
             var files = await query
                 .Skip((CurrentPage - 1) * PageSize)
@@ -296,12 +328,20 @@ public partial class MainWindowViewModel : ViewModelBase
                 .ToListAsync();
 
             ScannedFiles.Clear();
-            foreach (var file in files)
-                ScannedFiles.Add(new ScannedFileDisplayItem(file));
+            files.ForEach(file => ScannedFiles.Add(new ScannedFileDisplayItem(file)));
         }
         catch (Exception ex)
         {
             StatusMessages.Add($"Error loading files: {ex.Message}");
         }   
+    }
+
+    private void ClampCurrentPage()
+    {
+        if (CurrentPage <= TotalPages) return;
+
+        _suppressPageReload = true;
+        CurrentPage = TotalPages;
+        _suppressPageReload = false;
     }
 }
