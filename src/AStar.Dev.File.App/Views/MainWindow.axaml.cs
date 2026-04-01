@@ -1,7 +1,10 @@
 using AStar.Dev.File.App.ViewModels;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
+using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Specialized;
+using System.IO;
 
 namespace AStar.Dev.File.App.Views;
 
@@ -19,6 +22,7 @@ public partial class MainWindow : Window
         {
             vm.StatusMessages.CollectionChanged += OnStatusMessagesChanged;
             vm.ViewFileRequested += OnViewFileRequested;
+            vm.OpenDeleteWindowRequested += OnOpenDeleteWindowRequested;
         }
     }
 
@@ -44,5 +48,14 @@ public partial class MainWindow : Window
 
         var vm = new ViewWindowViewModel(item, imgW, imgH);
         new ViewWindow { DataContext = vm }.Show();
+    }
+
+    private void OnOpenDeleteWindowRequested()
+    {
+        if (Application.Current is App app)
+        {
+            var vm = app.GetService<DeletePendingViewModel>();
+            new DeletePendingWindow { DataContext = vm }.Show();
+        }
     }
 }

@@ -16,6 +16,10 @@ public partial class App : Application
 {
     private IServiceProvider? _services;
 
+    public IServiceProvider? Services => _services;
+
+    public T? GetService<T>() where T : class => _services?.GetService(typeof(T)) as T;
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -56,8 +60,10 @@ public partial class App : Application
 
         services.AddSingleton<IFileTypeClassifier, FileTypeClassifier>();
         services.AddSingleton<IFolderPickerService, FolderPickerService>();
+        services.AddSingleton<IFileDeleteService, FileDeleteService>();
         services.AddTransient<IFileScannerService, FileScannerService>();
         services.AddTransient<MainWindowViewModel>();
+        services.AddTransient<DeletePendingViewModel>();
 
         return services.BuildServiceProvider();
     }
