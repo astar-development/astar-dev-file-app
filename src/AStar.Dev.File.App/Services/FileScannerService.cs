@@ -24,7 +24,6 @@ public class FileScannerService(
 
         await RecurseDirectory(rootPath, rootPath, progress, counter, ct);
 
-        // Only mark missing files when scan ran to completion (not cancelled)
         await using var db = await dbContextFactory.CreateDbContextAsync(ct);
         await db.ScannedFiles
             .Where(f => f.RootPath == rootPath && f.LastScannedAt < scanStartedAt)
@@ -46,11 +45,7 @@ public class FileScannerService(
         CancellationToken ct)
     {
         var time = DateTime.Now.ToString("HH:mm:ss");
-        progress.Report(new ScanProgressUpdate(
-            CurrentFolder: directory,
-            TotalFilesProcessed: counter.Value,
-            CurrentFileName: null,
-            StatusMessage: $"[{time}] Scanning: {directory}"));
+        progress.Report(new ScanProgressUpdate(CurrentFolder: directory, TotalFilesProcessed: counter.Value, CurrentFileName: null, StatusMessage: $"[{time}] Scanning: {directory}"));
 
         await using var db = await dbContextFactory.CreateDbContextAsync(ct);
 
@@ -93,7 +88,6 @@ public class FileScannerService(
 
                 counter.Value++;
 
-                // Report every N files to avoid flooding the UI thread
                 if (counter.Value % ProgressReportInterval == 0)
                 {
                     time = DateTime.Now.ToString("HH:mm:ss");

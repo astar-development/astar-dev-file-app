@@ -1,10 +1,11 @@
 using AStar.Dev.File.App.Models;
-using System;
 using System.IO;
 
 namespace AStar.Dev.File.App.ViewModels;
 
-public class ScannedFileDisplayItem
+using System.ComponentModel;
+
+public class ScannedFileDisplayItem : INotifyPropertyChanged
 {
     public int Id { get; }
     public string FullPath { get; }
@@ -17,7 +18,20 @@ public class ScannedFileDisplayItem
     public string FileType { get; }
     public string LastModified { get; }
     public string LastViewed { get; }
-    public bool PendingDelete { get; }
+
+    private bool _pendingDelete;
+    public bool PendingDelete
+    {
+        get => _pendingDelete;
+        set
+        {
+            if (_pendingDelete != value)
+            {
+                _pendingDelete = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PendingDelete)));
+            }
+        }
+    }
 
     public ScannedFileDisplayItem(ScannedFile file)
     {
@@ -34,8 +48,10 @@ public class ScannedFileDisplayItem
         LastViewed = file.LastViewed.HasValue
             ? file.LastViewed.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
             : "—";
-        PendingDelete = file.PendingDelete;
+        _pendingDelete = file.PendingDelete;
     }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     public static string FormatSize(long bytes)
     {

@@ -18,13 +18,13 @@
     <Import Project="$(NuGetPackageRoot)microsoft.testing.extensions.telemetry/2.0.2/buildTransitive/net9.0/Microsoft.Testing.Extensions.Telemetry.props" Condition="Exists('$(NuGetPackageRoot)microsoft.testing.extensions.telemetry/2.0.2/buildTransitive/net9.0/Microsoft.Testing.Extensions.Telemetry.props')" />
     <Import Project="$(NuGetPackageRoot)xunit.v3.core.mtp-v2/3.2.2/buildTransitive/xunit.v3.core.mtp-v2.props" Condition="Exists('$(NuGetPackageRoot)xunit.v3.core.mtp-v2/3.2.2/buildTransitive/xunit.v3.core.mtp-v2.props')" />
     <Import Project="$(NuGetPackageRoot)skiasharp.nativeassets.webassembly/2.88.9/buildTransitive/netstandard1.0/SkiaSharp.NativeAssets.WebAssembly.props" Condition="Exists('$(NuGetPackageRoot)skiasharp.nativeassets.webassembly/2.88.9/buildTransitive/netstandard1.0/SkiaSharp.NativeAssets.WebAssembly.props')" />
-    <Import Project="$(NuGetPackageRoot)microsoft.entityframeworkcore/10.0.4/buildTransitive/net10.0/Microsoft.EntityFrameworkCore.props" Condition="Exists('$(NuGetPackageRoot)microsoft.entityframeworkcore/10.0.4/buildTransitive/net10.0/Microsoft.EntityFrameworkCore.props')" />
+    <Import Project="$(NuGetPackageRoot)microsoft.entityframeworkcore/10.0.5/buildTransitive/net10.0/Microsoft.EntityFrameworkCore.props" Condition="Exists('$(NuGetPackageRoot)microsoft.entityframeworkcore/10.0.5/buildTransitive/net10.0/Microsoft.EntityFrameworkCore.props')" />
     <Import Project="$(NuGetPackageRoot)harfbuzzsharp.nativeassets.webassembly/8.3.1.1/buildTransitive/netstandard1.0/HarfBuzzSharp.NativeAssets.WebAssembly.props" Condition="Exists('$(NuGetPackageRoot)harfbuzzsharp.nativeassets.webassembly/8.3.1.1/buildTransitive/netstandard1.0/HarfBuzzSharp.NativeAssets.WebAssembly.props')" />
-    <Import Project="$(NuGetPackageRoot)avalonia/11.3.12/buildTransitive/Avalonia.props" Condition="Exists('$(NuGetPackageRoot)avalonia/11.3.12/buildTransitive/Avalonia.props')" />
+    <Import Project="$(NuGetPackageRoot)avalonia/11.3.13/buildTransitive/Avalonia.props" Condition="Exists('$(NuGetPackageRoot)avalonia/11.3.13/buildTransitive/Avalonia.props')" />
   </ImportGroup>
   <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
     <Pkgxunit_analyzers Condition=" '$(Pkgxunit_analyzers)' == '' ">/home/jbarden/.nuget/packages/xunit.analyzers/1.27.0</Pkgxunit_analyzers>
     <PkgAvalonia_BuildServices Condition=" '$(PkgAvalonia_BuildServices)' == '' ">/home/jbarden/.nuget/packages/avalonia.buildservices/11.3.2</PkgAvalonia_BuildServices>
-    <PkgAvalonia Condition=" '$(PkgAvalonia)' == '' ">/home/jbarden/.nuget/packages/avalonia/11.3.12</PkgAvalonia>
+    <PkgAvalonia Condition=" '$(PkgAvalonia)' == '' ">/home/jbarden/.nuget/packages/avalonia/11.3.13</PkgAvalonia>
   </PropertyGroup>
 </Project>

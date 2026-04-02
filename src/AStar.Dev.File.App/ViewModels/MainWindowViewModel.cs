@@ -18,9 +18,9 @@ public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly IFileScannerService _fileScannerService;
     private readonly IFolderPickerService _folderPickerService;
+    private readonly IFileViewerService _fileViewerService;
     private readonly IDbContextFactory<FileAppDbContext> _dbContextFactory;
     private CancellationTokenSource? _cts;
-    // Guards against cascading reloads when programmatically resetting CurrentPage
     private bool _suppressPageReload;
 
     public static IReadOnlyList<int> PageSizes { get; } = [25, 50, 75, 100, 125, 150, 175, 200];
@@ -104,11 +104,17 @@ public partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel(
         IFileScannerService fileScannerService,
         IFolderPickerService folderPickerService,
+        IFileViewerService fileViewerService,
         IDbContextFactory<FileAppDbContext> dbContextFactory)
     {
         _fileScannerService = fileScannerService;
         _folderPickerService = folderPickerService;
+        _fileViewerService = fileViewerService;
         _dbContextFactory = dbContextFactory;
+
+        // Subscribe to file viewer service events
+        _fileViewerService.FileViewRequested += item => ViewFileRequested?.Invoke(item);
+
         _ = InitializeAsync();
     }
 
@@ -235,25 +241,14 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             file.PendingDelete = !file.PendingDelete;
             await db.SaveChangesAsync();
+            item.PendingDelete = file.PendingDelete;
         }
-
-        await LoadScannedFilesAsync();
     }
 
     [RelayCommand]
     private async Task ViewFile(ScannedFileDisplayItem? item)
     {
-        if (item is null) return;
-
-        await using var db = await _dbContextFactory.CreateDbContextAsync();
-        var file = await db.ScannedFiles.FindAsync(item.Id);
-        if (file is not null)
-        {
-            file.LastViewed = DateTime.UtcNow;
-            await db.SaveChangesAsync();
-        }
-
-        ViewFileRequested?.Invoke(item);
+        await _fileViewerService.ViewFileAsync(item);
     }
 
     [RelayCommand(CanExecute = nameof(IsScanning))]
@@ -340,7 +335,7 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             StatusMessages.Add($"Error loading files: {ex.Message}");
-        }   
+        }
     }
 
     private void ClampCurrentPage()

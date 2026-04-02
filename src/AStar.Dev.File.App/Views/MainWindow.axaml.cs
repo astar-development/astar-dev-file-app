@@ -2,9 +2,7 @@ using AStar.Dev.File.App.ViewModels;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
-using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Specialized;
-using System.IO;
 
 namespace AStar.Dev.File.App.Views;
 
