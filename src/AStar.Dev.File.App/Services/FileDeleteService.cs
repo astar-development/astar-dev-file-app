@@ -7,12 +7,6 @@ using System.Threading.Tasks;
 
 namespace AStar.Dev.File.App.Services;
 
-public interface IFileDeleteService
-{
-    Task DeleteFileAsync(string filePath, bool moveToRecycleBin = true);
-    Task DeleteFilesAsync(IEnumerable<string> filePaths, bool moveToRecycleBin = true);
-}
-
 public class FileDeleteService : IFileDeleteService
 {
     public async Task DeleteFileAsync(string filePath, bool moveToRecycleBin = true)
@@ -33,15 +27,15 @@ public class FileDeleteService : IFileDeleteService
         {
             if (moveToRecycleBin)
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     MoveFilesToRecycleBinWindows(files);
                 }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                else if (OperatingSystem.IsLinux())
                 {
                     MoveFilesToTrashLinux(files);
                 }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                else if (OperatingSystem.IsMacOS())
                 {
                     MoveFilesToTrashMacOS(files);
                 }
@@ -67,7 +61,7 @@ public class FileDeleteService : IFileDeleteService
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to delete {file}: {ex.Message}");
+                Debug.WriteLine($"Failed to delete {file}: {ex.Message}");
             }
         }
     }
@@ -95,13 +89,13 @@ public class FileDeleteService : IFileDeleteService
 
             if (process.ExitCode != 0)
             {
-                System.Diagnostics.Debug.WriteLine("gio trash failed, falling back to permanent delete");
+                Debug.WriteLine("gio trash failed, falling back to permanent delete");
                 PermanentlyDeleteFiles(filePaths);
             }
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"gio trash not available: {ex.Message}. Falling back to permanent delete.");
+            Debug.WriteLine($"gio trash not available: {ex.Message}. Falling back to permanent delete.");
             PermanentlyDeleteFiles(filePaths);
         }
     }
@@ -129,7 +123,7 @@ public class FileDeleteService : IFileDeleteService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"macOS trash failed: {ex.Message}");
+            Debug.WriteLine($"macOS trash failed: {ex.Message}");
             PermanentlyDeleteFiles(filePaths);
         }
     }
@@ -146,17 +140,25 @@ public class FileDeleteService : IFileDeleteService
 
         try
         {
-            SHFileOperation(ref fileOp);
+            int result = SHFileOperation(ref fileOp);
+
+            if (result != 0)
+            {
+                Debug.WriteLine($"Shell delete failed with code {result}. Falling back to permanent delete.");
+                PermanentlyDeleteFiles(filePaths);
+            }
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Shell delete failed: {ex.Message}. Falling back to permanent delete.");
+            Debug.WriteLine($"Shell delete failed: {ex.Message}. Falling back to permanent delete.");
             PermanentlyDeleteFiles(filePaths);
         }
     }
 
     [DllImport("shell32.dll", CharSet = CharSet.Auto)]
+#pragma warning disable SYSLIB1054 // Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
     private static extern int SHFileOperation(ref SHFILEOPSTRUCT lpFileOp);
+#pragma warning restore SYSLIB1054 // Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
     private struct SHFILEOPSTRUCT

@@ -111,10 +111,10 @@ public partial class MainWindowViewModel : ViewModelBase
         _folderPickerService = folderPickerService;
         _fileViewerService = fileViewerService;
         _dbContextFactory = dbContextFactory;
-        
+
         // Subscribe to file viewer service events
         _fileViewerService.FileViewRequested += item => ViewFileRequested?.Invoke(item);
-        
+
         _ = InitializeAsync();
     }
 
@@ -335,7 +335,7 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             StatusMessages.Add($"Error loading files: {ex.Message}");
-        }   
+        }
     }
 
     private void ClampCurrentPage()

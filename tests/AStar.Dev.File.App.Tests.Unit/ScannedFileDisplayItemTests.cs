@@ -1,6 +1,5 @@
 using AStar.Dev.File.App.Models;
 using AStar.Dev.File.App.ViewModels;
-using Shouldly;
 
 namespace AStar.Dev.File.App.Tests.Unit;
 
@@ -61,17 +60,17 @@ public class ScannedFileDisplayItemTests
         int id = 0,
         bool pendingDelete = false,
         long sizeInBytes = 0) => new()
-    {
-        Id = id,
-        RootPath = "/data",
-        FolderPath = "/data/docs",
-        FileName = fileName,
-        FullPath = fullPath,
-        FileType = fileType,
-        PendingDelete = pendingDelete,
-        SizeInBytes = sizeInBytes,
-        LastModified = DateTime.UtcNow
-    };
+        {
+            Id = id,
+            RootPath = "/data",
+            FolderPath = "/data/docs",
+            FileName = fileName,
+            FullPath = fullPath,
+            FileType = fileType,
+            PendingDelete = pendingDelete,
+            SizeInBytes = sizeInBytes,
+            LastModified = DateTime.UtcNow
+        };
 
     [Theory]
     [InlineData(0, "0 B")]

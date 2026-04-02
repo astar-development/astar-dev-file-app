@@ -38,7 +38,7 @@ public partial class DeletePendingViewModel : ViewModelBase
         _fileDeleteService = fileDeleteService;
         _fileViewerService = fileViewerService;
         _fileViewerService.FileViewRequested += item => ViewFileRequested?.Invoke(item);
-        
+
         _ = LoadPendingFilesAsync();
     }
 
