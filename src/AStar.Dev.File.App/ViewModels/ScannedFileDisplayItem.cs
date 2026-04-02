@@ -1,11 +1,11 @@
 using AStar.Dev.File.App.Models;
+using ReactiveUI;
+using ReactiveUI.Fody.Helpers;
 using System.IO;
 
 namespace AStar.Dev.File.App.ViewModels;
 
-using System.ComponentModel;
-
-public class ScannedFileDisplayItem : INotifyPropertyChanged
+public class ScannedFileDisplayItem : ReactiveObject
 {
     public int Id { get; }
     public string FullPath { get; }
@@ -19,19 +19,7 @@ public class ScannedFileDisplayItem : INotifyPropertyChanged
     public string LastModified { get; }
     public string LastViewed { get; }
 
-    private bool _pendingDelete;
-    public bool PendingDelete
-    {
-        get => _pendingDelete;
-        set
-        {
-            if (_pendingDelete != value)
-            {
-                _pendingDelete = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PendingDelete)));
-            }
-        }
-    }
+    [Reactive] public bool PendingDelete { get; set; }
 
     public ScannedFileDisplayItem(ScannedFile file)
     {
@@ -48,10 +36,8 @@ public class ScannedFileDisplayItem : INotifyPropertyChanged
         LastViewed = file.LastViewed.HasValue
             ? file.LastViewed.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
             : "—";
-        _pendingDelete = file.PendingDelete;
+        PendingDelete = file.PendingDelete;
     }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
 
     public static string FormatSize(long bytes)
     {

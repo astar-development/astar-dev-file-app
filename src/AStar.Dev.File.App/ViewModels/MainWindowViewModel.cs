@@ -1,20 +1,22 @@
-﻿using AStar.Dev.File.App.Data;
+using AStar.Dev.File.App.Data;
 using AStar.Dev.File.App.Models;
 using AStar.Dev.File.App.Services;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Microsoft.EntityFrameworkCore;
+using ReactiveUI;
+using ReactiveUI.Fody.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Reactive;
+using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace AStar.Dev.File.App.ViewModels;
 
-public partial class MainWindowViewModel : ViewModelBase
+public class MainWindowViewModel : ViewModelBase
 {
     private readonly IFileScannerService _fileScannerService;
     private readonly IFolderPickerService _folderPickerService;
@@ -25,81 +27,39 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public static IReadOnlyList<int> PageSizes { get; } = [25, 50, 75, 100, 125, 150, 175, 200];
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanScan))]
-    [NotifyCanExecuteChangedFor(nameof(StartScanCommand))]
-    [NotifyCanExecuteChangedFor(nameof(LoadFromDatabaseCommand))]
-    private string _selectedFolderPath = string.Empty;
+    [Reactive] public string SelectedFolderPath { get; set; } = string.Empty;
+    [Reactive] public bool IsScanning { get; set; }
+    [Reactive] public string CurrentScanFolder { get; set; } = string.Empty;
+    [Reactive] public int TotalFilesProcessed { get; set; }
+    [Reactive] public int PageSize { get; set; } = 50;
+    [Reactive] public int CurrentPage { get; set; } = 1;
+    [Reactive] public int TotalFileCount { get; set; }
+    [Reactive] public bool ShowDuplicatesOnly { get; set; }
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanScan))]
-    [NotifyCanExecuteChangedFor(nameof(StartScanCommand))]
-    [NotifyCanExecuteChangedFor(nameof(SelectFolderCommand))]
-    [NotifyCanExecuteChangedFor(nameof(CancelCommand))]
-    private bool _isScanning;
+    private readonly ObservableAsPropertyHelper<int> _totalPages;
+    public int TotalPages => _totalPages.Value;
 
-    [ObservableProperty]
-    private string _currentScanFolder = string.Empty;
-
-    [ObservableProperty]
-    private int _totalFilesProcessed;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(TotalPages), nameof(PagingInfo))]
-    [NotifyCanExecuteChangedFor(nameof(FirstPageCommand))]
-    [NotifyCanExecuteChangedFor(nameof(PreviousPageCommand))]
-    [NotifyCanExecuteChangedFor(nameof(NextPageCommand))]
-    [NotifyCanExecuteChangedFor(nameof(LastPageCommand))]
-    private int _pageSize = 50;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(PagingInfo))]
-    [NotifyCanExecuteChangedFor(nameof(FirstPageCommand))]
-    [NotifyCanExecuteChangedFor(nameof(PreviousPageCommand))]
-    [NotifyCanExecuteChangedFor(nameof(NextPageCommand))]
-    [NotifyCanExecuteChangedFor(nameof(LastPageCommand))]
-    private int _currentPage = 1;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(TotalPages), nameof(PagingInfo))]
-    [NotifyCanExecuteChangedFor(nameof(NextPageCommand))]
-    [NotifyCanExecuteChangedFor(nameof(LastPageCommand))]
-    private int _totalFileCount;
-
-    private bool _showDuplicatesOnly;
-
-    public bool ShowDuplicatesOnly
-    {
-        get => _showDuplicatesOnly;
-        set
-        {
-            if (SetProperty(ref _showDuplicatesOnly, value))
-            {
-                _suppressPageReload = true;
-                CurrentPage = 1;
-                _suppressPageReload = false;
-                _ = LoadScannedFilesAsync();
-            }
-        }
-    }
-
-    [RelayCommand]
-    private void ToggleDuplicatesOnly()
-    {
-        ShowDuplicatesOnly = !ShowDuplicatesOnly;
-    }
-
-    public int TotalPages => TotalFileCount == 0 ? 1 : (int)Math.Ceiling((double)TotalFileCount / PageSize);
-
-    public string PagingInfo => $"PAGE {CurrentPage} OF {TotalPages}  [{TotalFileCount} FILES]";
-
-    public bool CanScan => !IsScanning && !string.IsNullOrWhiteSpace(SelectedFolderPath);
+    private readonly ObservableAsPropertyHelper<string> _pagingInfo;
+    public string PagingInfo => _pagingInfo.Value;
 
     public ObservableCollection<string> StatusMessages { get; } = [];
     public ObservableCollection<ScannedFileDisplayItem> ScannedFiles { get; } = [];
 
     public event Action<ScannedFileDisplayItem>? ViewFileRequested;
     public event Action? OpenDeleteWindowRequested;
+
+    public ReactiveCommand<Unit, Unit> SelectFolderCommand { get; }
+    public ReactiveCommand<Unit, Unit> StartScanCommand { get; }
+    public ReactiveCommand<Unit, Unit> CancelCommand { get; }
+    public ReactiveCommand<Unit, Unit> LoadFromDatabaseCommand { get; }
+    public ReactiveCommand<Unit, Unit> OpenDeleteWindowCommand { get; }
+    public ReactiveCommand<Unit, Unit> ToggleDuplicatesOnlyCommand { get; }
+    public ReactiveCommand<ScannedFileDisplayItem?, Unit> TogglePendingDeleteCommand { get; }
+    public ReactiveCommand<ScannedFileDisplayItem?, Unit> ViewFileCommand { get; }
+    public ReactiveCommand<Unit, Unit> FirstPageCommand { get; }
+    public ReactiveCommand<Unit, Unit> PreviousPageCommand { get; }
+    public ReactiveCommand<Unit, Unit> NextPageCommand { get; }
+    public ReactiveCommand<Unit, Unit> LastPageCommand { get; }
 
     public MainWindowViewModel(
         IFileScannerService fileScannerService,
@@ -112,7 +72,82 @@ public partial class MainWindowViewModel : ViewModelBase
         _fileViewerService = fileViewerService;
         _dbContextFactory = dbContextFactory;
 
-        // Subscribe to file viewer service events
+        // Computed properties
+        _totalPages = this.WhenAnyValue(x => x.TotalFileCount, x => x.PageSize,
+            (count, size) => count == 0 ? 1 : (int)Math.Ceiling((double)count / size))
+            .ToProperty(this, x => x.TotalPages, initialValue: 1);
+
+        _pagingInfo = this.WhenAnyValue(x => x.CurrentPage, x => x.TotalFileCount, x => x.PageSize,
+            (page, count, size) =>
+            {
+                int total = count == 0 ? 1 : (int)Math.Ceiling((double)count / size);
+                return $"PAGE {page} OF {total}  [{count} FILES]";
+            })
+            .ToProperty(this, x => x.PagingInfo, initialValue: "PAGE 1 OF 1  [0 FILES]");
+
+        // Commands
+        var canSelectFolder = this.WhenAnyValue(x => x.IsScanning, scanning => !scanning);
+        SelectFolderCommand = ReactiveCommand.CreateFromTask(SelectFolder, canSelectFolder);
+
+        var canScan = this.WhenAnyValue(x => x.IsScanning, x => x.SelectedFolderPath,
+            (scanning, path) => !scanning && !string.IsNullOrWhiteSpace(path));
+        StartScanCommand = ReactiveCommand.CreateFromTask(StartScan, canScan);
+
+        var canCancel = this.WhenAnyValue(x => x.IsScanning);
+        CancelCommand = ReactiveCommand.Create(Cancel, canCancel);
+
+        var canLoad = this.WhenAnyValue(x => x.SelectedFolderPath, path => !string.IsNullOrWhiteSpace(path));
+        LoadFromDatabaseCommand = ReactiveCommand.CreateFromTask(LoadFromDatabase, canLoad);
+
+        OpenDeleteWindowCommand = ReactiveCommand.Create(() => OpenDeleteWindowRequested?.Invoke());
+        ToggleDuplicatesOnlyCommand = ReactiveCommand.Create(() => { ShowDuplicatesOnly = !ShowDuplicatesOnly; });
+
+        TogglePendingDeleteCommand = ReactiveCommand.CreateFromTask<ScannedFileDisplayItem?>(TogglePendingDelete);
+        ViewFileCommand = ReactiveCommand.CreateFromTask<ScannedFileDisplayItem?>(ViewFile);
+
+        var canGoFirst = this.WhenAnyValue(x => x.CurrentPage, page => page > 1);
+        FirstPageCommand = ReactiveCommand.Create(() => { CurrentPage = 1; }, canGoFirst);
+
+        var canGoPrevious = this.WhenAnyValue(x => x.CurrentPage, page => page > 1);
+        PreviousPageCommand = ReactiveCommand.Create(() => { CurrentPage--; }, canGoPrevious);
+
+        var canGoNext = this.WhenAnyValue(x => x.CurrentPage, x => x.TotalPages,
+            (page, total) => page < total);
+        NextPageCommand = ReactiveCommand.Create(() => { CurrentPage++; }, canGoNext);
+
+        var canGoLast = this.WhenAnyValue(x => x.CurrentPage, x => x.TotalPages,
+            (page, total) => page < total);
+        LastPageCommand = ReactiveCommand.Create(() => { CurrentPage = TotalPages; }, canGoLast);
+
+        // Side-effect subscriptions (replacing partial void OnXChanged hooks)
+        this.WhenAnyValue(x => x.CurrentPage)
+            .Skip(1)
+            .Subscribe(__ =>
+            {
+                if (!_suppressPageReload)
+                    _ = LoadScannedFilesAsync();
+            });
+
+        this.WhenAnyValue(x => x.PageSize)
+            .Skip(1)
+            .Subscribe(__ =>
+            {
+                _suppressPageReload = true;
+                CurrentPage = 1;
+                _suppressPageReload = false;
+                _ = LoadScannedFilesAsync();
+            });
+
+        this.WhenAnyValue(x => x.ShowDuplicatesOnly)
+            .Skip(1)
+            .Subscribe(__ =>
+            {
+                _suppressPageReload = true;
+                CurrentPage = 1;
+                _suppressPageReload = false;
+                _ = LoadScannedFilesAsync();
+            });
+
         _fileViewerService.FileViewRequested += item => ViewFileRequested?.Invoke(item);
 
         _ = InitializeAsync();
@@ -134,12 +169,10 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         else
         {
-            var defaultPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
-            SelectedFolderPath = defaultPath;
+            SelectedFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
         }
     }
 
-    [RelayCommand(CanExecute = nameof(CanSelectFolder))]
     private async Task SelectFolder()
     {
         var path = await _folderPickerService.OpenFolderPickerAsync();
@@ -161,15 +194,12 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         else
         {
-            db.AppSettings.Add(new Models.AppSetting { Key = "SelectedFolderPath", Value = path });
+            db.AppSettings.Add(new AppSetting { Key = "SelectedFolderPath", Value = path });
         }
 
         await db.SaveChangesAsync();
     }
 
-    private bool CanSelectFolder() => !IsScanning;
-
-    [RelayCommand(CanExecute = nameof(CanLoadFromDatabase))]
     private async Task LoadFromDatabase()
     {
         _suppressPageReload = true;
@@ -178,15 +208,6 @@ public partial class MainWindowViewModel : ViewModelBase
         await LoadScannedFilesAsync();
     }
 
-    private bool CanLoadFromDatabase() => !string.IsNullOrWhiteSpace(SelectedFolderPath);
-
-    [RelayCommand]
-    private void OpenDeleteWindow()
-    {
-        OpenDeleteWindowRequested?.Invoke();
-    }
-
-    [RelayCommand(CanExecute = nameof(CanScan))]
     private async Task StartScan()
     {
         if (string.IsNullOrWhiteSpace(SelectedFolderPath) || IsScanning)
@@ -230,7 +251,6 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
     private async Task TogglePendingDelete(ScannedFileDisplayItem? item)
     {
         if (item is null) return;
@@ -245,46 +265,14 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
     private async Task ViewFile(ScannedFileDisplayItem? item)
     {
         await _fileViewerService.ViewFileAsync(item);
     }
 
-    [RelayCommand(CanExecute = nameof(IsScanning))]
     private void Cancel()
     {
         _cts?.Cancel();
-    }
-
-    [RelayCommand(CanExecute = nameof(CanGoFirst))]
-    private void FirstPage() { CurrentPage = 1; }
-    private bool CanGoFirst() => CurrentPage > 1;
-
-    [RelayCommand(CanExecute = nameof(CanGoPrevious))]
-    private void PreviousPage() { CurrentPage--; }
-    private bool CanGoPrevious() => CurrentPage > 1;
-
-    [RelayCommand(CanExecute = nameof(CanGoNext))]
-    private void NextPage() { CurrentPage++; }
-    private bool CanGoNext() => CurrentPage < TotalPages;
-
-    [RelayCommand(CanExecute = nameof(CanGoLast))]
-    private void LastPage() { CurrentPage = TotalPages; }
-    private bool CanGoLast() => CurrentPage < TotalPages;
-
-    partial void OnCurrentPageChanged(int value)
-    {
-        if (!_suppressPageReload)
-            _ = LoadScannedFilesAsync();
-    }
-
-    partial void OnPageSizeChanged(int value)
-    {
-        _suppressPageReload = true;
-        CurrentPage = 1;
-        _suppressPageReload = false;
-        _ = LoadScannedFilesAsync();
     }
 
     private async Task LoadScannedFilesAsync()

@@ -1,33 +1,34 @@
 using AStar.Dev.File.App.Data;
 using AStar.Dev.File.App.Services;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Microsoft.EntityFrameworkCore;
+using ReactiveUI;
+using ReactiveUI.Fody.Helpers;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reactive;
 using System.Threading.Tasks;
 
 namespace AStar.Dev.File.App.ViewModels;
 
-public partial class DeletePendingViewModel : ViewModelBase
+public class DeletePendingViewModel : ViewModelBase
 {
     private readonly IDbContextFactory<FileAppDbContext> _dbContextFactory;
     private readonly IFileDeleteService _fileDeleteService;
     private readonly IFileViewerService _fileViewerService;
 
-    [ObservableProperty]
-    private bool _isDeleting;
-
-    [ObservableProperty]
-    private int _pendingDeleteCount;
-
-    [ObservableProperty]
-    private string _statusMessage = string.Empty;
+    [Reactive] public bool IsDeleting { get; set; }
+    [Reactive] public int PendingDeleteCount { get; set; }
+    [Reactive] public string StatusMessage { get; set; } = string.Empty;
 
     public ObservableCollection<ScannedFileDisplayItem> PendingDeleteFiles { get; } = [];
 
     public event Action<ScannedFileDisplayItem>? ViewFileRequested;
+
+    public ReactiveCommand<ScannedFileDisplayItem?, Unit> TogglePendingDeleteCommand { get; }
+    public ReactiveCommand<Unit, Unit> DeleteAllCommand { get; }
+    public ReactiveCommand<Unit, Unit> ClearMarkingsCommand { get; }
+    public ReactiveCommand<ScannedFileDisplayItem?, Unit> ViewFileCommand { get; }
 
     public DeletePendingViewModel(
         IDbContextFactory<FileAppDbContext> dbContextFactory,
@@ -39,10 +40,18 @@ public partial class DeletePendingViewModel : ViewModelBase
         _fileViewerService = fileViewerService;
         _fileViewerService.FileViewRequested += item => ViewFileRequested?.Invoke(item);
 
+        TogglePendingDeleteCommand = ReactiveCommand.CreateFromTask<ScannedFileDisplayItem?>(TogglePendingDelete);
+
+        var canDeleteAll = this.WhenAnyValue(x => x.IsDeleting, x => x.PendingDeleteCount,
+            (deleting, count) => !deleting && count > 0);
+        DeleteAllCommand = ReactiveCommand.CreateFromTask(DeleteAll, canDeleteAll);
+
+        ClearMarkingsCommand = ReactiveCommand.CreateFromTask(ClearMarkings);
+        ViewFileCommand = ReactiveCommand.CreateFromTask<ScannedFileDisplayItem?>(ViewFile);
+
         _ = LoadPendingFilesAsync();
     }
 
-    [RelayCommand]
     private async Task TogglePendingDelete(ScannedFileDisplayItem? item)
     {
         if (item is null) return;
@@ -58,7 +67,6 @@ public partial class DeletePendingViewModel : ViewModelBase
         await LoadPendingFilesAsync();
     }
 
-    [RelayCommand(CanExecute = nameof(CanDeleteAll))]
     private async Task DeleteAll()
     {
         if (PendingDeleteFiles.Count == 0)
@@ -95,9 +103,6 @@ public partial class DeletePendingViewModel : ViewModelBase
         }
     }
 
-    private bool CanDeleteAll() => !IsDeleting && PendingDeleteFiles.Count > 0;
-
-    [RelayCommand]
     private async Task ClearMarkings()
     {
         if (PendingDeleteFiles.Count == 0)
@@ -116,7 +121,6 @@ public partial class DeletePendingViewModel : ViewModelBase
         await LoadPendingFilesAsync();
     }
 
-    [RelayCommand]
     private async Task ViewFile(ScannedFileDisplayItem? item)
     {
         await _fileViewerService.ViewFileAsync(item);
@@ -137,7 +141,6 @@ public partial class DeletePendingViewModel : ViewModelBase
             files.ForEach(file => PendingDeleteFiles.Add(new ScannedFileDisplayItem(file)));
 
             PendingDeleteCount = PendingDeleteFiles.Count;
-            DeleteAllCommand.NotifyCanExecuteChanged();
         }
         catch (Exception ex)
         {
